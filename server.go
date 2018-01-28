@@ -48,7 +48,7 @@ type Server struct {
 RegisterBeforeFunc validate and add a func that will be executed before service call
 */
 func (s *Server) RegisterBeforeFunc(fn interface{}) error {
-	if err := ValidCtxFunc(fn, s.ctxType); err != nil {
+	if err := validCtxFunc(fn, s.ctxType); err != nil {
 		return err
 	}
 	s.beforeFns = append(s.beforeFns, reflect.ValueOf(fn))
@@ -59,7 +59,7 @@ func (s *Server) RegisterBeforeFunc(fn interface{}) error {
 RegisterAfterFunc validate and add a func that will be executed after service call
  */
 func (s *Server) RegisterAfterFunc(fn interface{}) error {
-	if err := ValidCtxFunc(fn, s.ctxType); err != nil {
+	if err := validCtxFunc(fn, s.ctxType); err != nil {
 		return err
 	}
 	s.afterFns = append(s.beforeFns, reflect.ValueOf(fn))
@@ -161,7 +161,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// execute before functions before service call
 	for _, fn := range s.beforeFns {
-		if err := FuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
+		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
 			codecReq.WriteError(w, 400, err)
 			return
 		}
@@ -178,7 +178,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reply := reflect.New(methodSpec.replyType)
 
 	// Call the service method.
-	if err := FuncCall(methodSpec.method.Func, []reflect.Value{
+	if err := reflectFuncCall(methodSpec.method.Func, []reflect.Value{
 		methodSpec.service.rValue,
 		ctx,
 		args,
@@ -190,7 +190,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// execute after functions before service call
 	for _, fn := range s.afterFns {
-		if err := FuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
+		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
 			codecReq.WriteError(w, 400, err)
 			return
 		}
@@ -210,9 +210,9 @@ func WriteError(w http.ResponseWriter, status int, msg string) {
 }
 
 /*
-FuncCall, a helper function to call a function in reflect way and return error
+reflectFuncCall, a helper function to call a function in reflect way and return error
  */
-func FuncCall(fn reflect.Value, args []reflect.Value) error {
+func reflectFuncCall(fn reflect.Value, args []reflect.Value) error {
 	errValue := fn.Call(args)
 	var errResult error
 	errInter := errValue[0].Interface()
@@ -223,10 +223,10 @@ func FuncCall(fn reflect.Value, args []reflect.Value) error {
 }
 
 /*
-ValidCtxFunc validate context func
+validCtxFunc validate context func
 param fn shoule be type func(*http.Request, [Context Pointer Type]) error; and Context Pointer Type is of type param ctxType
 */
-func ValidCtxFunc(fn interface{}, ctxType reflect.Type) error {
+func validCtxFunc(fn interface{}, ctxType reflect.Type) error {
 	if fn == nil {
 		return fmt.Errorf("rpc: middleware is nil")
 	}

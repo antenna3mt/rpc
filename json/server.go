@@ -7,8 +7,8 @@ package json
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/antenna3mt/rpc"
+	"net/http"
 )
 
 var null = json.RawMessage([]byte("null"))

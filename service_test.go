@@ -1,10 +1,10 @@
 package rpc
 
 import (
-	"testing"
-	"reflect"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"reflect"
+	"testing"
 )
 
 type Context struct{}

@@ -7,10 +7,10 @@
 package rpc
 
 import (
-	"reflect"
-	"sync"
 	"fmt"
+	"reflect"
 	"strings"
+	"sync"
 )
 
 type serviceMethod struct {
@@ -34,7 +34,7 @@ type serviceMap struct {
 
 /*
 register adds a new service using reflection to extract its methods
- */
+*/
 func (m *serviceMap) add(rcvr interface{}, name string, ctxType reflect.Type) error {
 	if rcvr == nil {
 		return fmt.Errorf("rpc: nil rcvr is not allowed")

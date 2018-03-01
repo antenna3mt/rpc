@@ -1,15 +1,15 @@
 package test
 
 import (
-	"testing"
-	"net/http"
-	"fmt"
-	"net/http/httptest"
-	"log"
 	"bytes"
+	"fmt"
 	"github.com/antenna3mt/rpc"
 	"github.com/antenna3mt/rpc/json"
 	"github.com/stretchr/testify/assert"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 const MyToken = "MyToken"

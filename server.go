@@ -7,10 +7,10 @@
 package rpc
 
 import (
-	"strings"
-	"net/http"
 	"fmt"
+	"net/http"
 	"reflect"
+	"strings"
 )
 
 /*
@@ -35,7 +35,7 @@ func NewServer(ctx interface{}) (*Server, error) {
 
 /*
 serves registered services with registered codecs.
- */
+*/
 type Server struct {
 	codecs    map[string]Codec // codecs
 	services  *serviceMap      // services
@@ -57,7 +57,7 @@ func (s *Server) RegisterBeforeFunc(fn interface{}) error {
 
 /*
 RegisterAfterFunc validate and add a func that will be executed after service call
- */
+*/
 func (s *Server) RegisterAfterFunc(fn interface{}) error {
 	if err := validCtxFunc(fn, s.ctxType); err != nil {
 		return err
@@ -105,7 +105,7 @@ HasMethod returns true if the given method is registered.
 The method uses a dotted notation as in "Service.Method".
 */
 func (s *Server) HasMethod(name string) bool {
-	_, err := s.services.get(name);
+	_, err := s.services.get(name)
 	return err == nil
 }
 
@@ -118,7 +118,7 @@ func (s *Server) ServiceMap() map[string][]string {
 
 /*
 ServeHTTP
- */
+*/
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		WriteError(w, 405, "rpc: POST method required, received "+r.Method)
@@ -143,6 +143,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Create a new codec request.
 	codecReq := codec.NewRequest(r)
+
+	rValue := reflect.ValueOf(r)
+	ctx := reflect.New(s.ctxType)
+
+	// execute before functions before service call
+	for _, fn := range s.beforeFns {
+		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx}); err != nil {
+			codecReq.WriteError(w, 400, err)
+			return
+		}
+	}
+
 	// Get service method to be called.
 	method, errMethod := codecReq.Method()
 	if errMethod != nil {
@@ -154,17 +166,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if errGet != nil {
 		codecReq.WriteError(w, 400, errGet)
 		return
-	}
-
-	rValue := reflect.ValueOf(r)
-	ctx := reflect.New(s.ctxType)
-
-	// execute before functions before service call
-	for _, fn := range s.beforeFns {
-		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
-			codecReq.WriteError(w, 400, err)
-			return
-		}
 	}
 
 	// Decode the args.
@@ -190,7 +191,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// execute after functions before service call
 	for _, fn := range s.afterFns {
-		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx,}); err != nil {
+		if err := reflectFuncCall(fn, []reflect.Value{rValue, ctx}); err != nil {
 			codecReq.WriteError(w, 400, err)
 			return
 		}
@@ -202,7 +203,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 /*
 WriteError, a helper function to write error message to ResponseWriter
- */
+*/
 func WriteError(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -211,7 +212,7 @@ func WriteError(w http.ResponseWriter, status int, msg string) {
 
 /*
 reflectFuncCall, a helper function to call a function in reflect way and return error
- */
+*/
 func reflectFuncCall(fn reflect.Value, args []reflect.Value) error {
 	errValue := fn.Call(args)
 	var errResult error
